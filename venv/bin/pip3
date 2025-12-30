@@ -1,4 +1,4 @@
-#!/Users/abdullahaderinto/Documents/Airbnb-Listings-ETL-pipeline/venv/bin/python3.11
+#!/Users/abdullahaderinto/Documents/Airbnb-Listings-ETL-pipeline/venv/bin/python3.10
 import sys
 from pip._internal.cli.main import main
 if __name__ == '__main__':
