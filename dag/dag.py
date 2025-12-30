@@ -1,8 +1,7 @@
 from airflow.decorators import dag
+from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-from airflow.sensors.filesystem import FileSensor
 from datetime import datetime
-import os
 
 
 @dag(
@@ -10,33 +9,33 @@ import os
     start_date=datetime(2025, 1, 1),
     schedule_interval="@daily",
     catchup=False,
-    description="Airbnb listings ETL using Spark",
+    description="Airbnb listings ETL using Spark on EMR",
     tags=["spark", "etl", "airbnb"],
 )
 def bookings_spark_pipeline():
 
-    # Wait for raw Airbnb CSV to exist
-    wait_for_raw_data = FileSensor(
+    # 1️⃣ Wait for raw Airbnb data to exist in S3
+    wait_for_raw_data = S3KeySensor(
         task_id="wait_for_raw_data",
-        filepath="/Users/abdullahaderinto/Documents/Airbnb-Listings-ETL-pipeline/data/listings.csv.gz",
-        fs_conn_id="fs_default",
+        bucket_name="airbnb-proj-raw-data",
+        bucket_key="*",  # waits for any file in bucket
+        aws_conn_id="aws_default",
         poke_interval=60,
         timeout=60 * 60,
     )
 
-    # Run Spark ETL job
+    # 2️⃣ Run Spark ETL job from S3
     run_spark_etl = SparkSubmitOperator(
         task_id="run_spark_etl",
-        application="/Users/abdullahaderinto/spark_jobs/airbnb_etl.py",
-        conn_id="spark_default",
+        application="s3://airbnb-spark-app-bucket/spark_app/airbnb_etl.py",
+        conn_id="spark_default",   # points to EMR / Spark cluster
         verbose=True,
         application_args=[
-            "--input", "s3://airbnb-raw/listings/",
-            "--output", "s3://airbnb-processed/listings/",
+            "--input", "s3://airbnb-proj-raw-data/",
+            "--output", "s3://processed-airbnb-data/output/",
         ],
     )
 
-    # Task dependency
     wait_for_raw_data >> run_spark_etl
 
 
