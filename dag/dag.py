@@ -14,7 +14,6 @@ from datetime import datetime
 )
 def bookings_spark_pipeline():
 
-    # 1️⃣ Wait for raw Airbnb data to exist in S3
     wait_for_raw_data = S3KeySensor(
         task_id="wait_for_raw_data",
         bucket_name="airbnb-proj-raw-data",
@@ -24,7 +23,6 @@ def bookings_spark_pipeline():
         timeout=60 * 60,
     )
 
-    # 2️⃣ Run Spark ETL job from S3
     run_spark_etl = SparkSubmitOperator(
         task_id="run_spark_etl",
         application="s3://airbnb-spark-app-bucket/spark_app/airbnb_etl.py",
